@@ -7,22 +7,10 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 
-# Install launch files
-install(DIRECTORY config
-  DESTINATION share/${PROJECT_NAME}/config
-)
-
-# Install launch files
-install(DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}/launch
-)
-
-# Install launch files
-install(DIRECTORY urdf
+install( DIRECTORY  config launch urdf world
   DESTINATION share/${PROJECT_NAME}
 )
 

@@ -31,7 +31,7 @@
 
 <joint name="base_joint" type="fixed">
     <origin xyz="0.0 0.0 0.1" rpy="0.0 0.0 0.0"/>
-    <parent link="odom"/>
+    <parent link="odom"/>                  
     <child link="base_link"/>
     <axis xyz="0.0 0.0 0.0"/>
     <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
@@ -68,7 +68,7 @@
     <parent link="base_link"/>
     <child link="front_right_wheel"/>
     <axis xyz="0.0 0.0 -1.0"/>
-    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+    <limit lower="0.0" upper="0.0" effort="10.0" velocity="10.0"/>
 </joint>
 
 
@@ -102,7 +102,7 @@
     <parent link="base_link"/>
     <child link="front_left_wheel"/>
     <axis xyz="0.0 0.0 -1.0"/>
-    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+    <limit lower="0.0" upper="0.0" effort="10.0" velocity="10.0"/>
 </joint>
 
 
@@ -136,7 +136,7 @@
     <parent link="base_link"/>
     <child link="back_right_wheel"/>
     <axis xyz="0.0 0.0 -1.0"/>
-    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+    <limit lower="0.0" upper="0.0" effort="10.0" velocity="10.0"/>
 </joint>
 
 
@@ -170,15 +170,15 @@
     <parent link="base_link"/>
     <child link="back_left_wheel"/>
     <axis xyz="0.0 0.0 -1.0"/>
-    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+    <limit lower="0.0" upper="0.0" effort="10.0" velocity="10.0"/>
 </joint>
 
 
 <link name="lidar_link">
     <inertial>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-        <mass value="1.0"/>
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+      <mass value="1e-5" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
     </inertial>
     <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
@@ -202,12 +202,151 @@
     <origin xyz="0.0 0.0 0.13" rpy="0.0 0.0 0.0"/>
     <parent link="base_link"/>
     <child link="lidar_link"/>
-    <axis xyz="0.0 1.0 0.0"/>
+    <axis xyz="0.0 0.0 0.0"/>
     <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
 </joint>
 
+<link name="camera_link">
+    <inertial>
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        <mass value="5.0"/>
+        <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="">
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        <geometry>
+            <box size="0.05 0.05 0.05"/>
+        </geometry>
+        <material name="">
+            <color rgba="0.0 0.0 0.0 1.0"/>
+            <texture filename=""/>
+        </material>
+    </visual>
+    <collision>
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        <geometry>
+            <box size="0.05 0.05 0.05"/>
+        </geometry>
+    </collision>
+</link>
 
-  <gazebo>
+<joint name="camera_joint" type="fixed">
+    <origin xyz="0.32 0.0 0.07" rpy="0.0 0.0 0.0"/>
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <axis xyz="0.0 0.0 0.0"/>
+    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+</joint>
+
+<gazebo>
+ <plugin filename="gz-sim-joint-state-publisher-system"
+  name="gz::sim::systems::JointStatePublisher">
+  <topic>joint_states</topic> 
+  <joint_name>back_left_joint</joint_name>
+  <joint_name>back_right_joint</joint_name>
+  <joint_name>front_left_joint</joint_name>
+  <joint_name>front_right_joint</joint_name>
+</plugin> 
+
+<!--from <ros><remapping> -->
+<plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+  <!-- Remove <ros> tag. -->
+
+  <!-- wheels -->
+  <left_joint>front_left_joint</left_joint>
+  <right_joint>front_right_joint</right_joint>
+
+  <!-- kinematics -->
+  <wheel_separation>0.4</wheel_separation>
+  <wheel_radius>0.1</wheel_radius> <!-- computed from <wheel_diameter> in the original plugin-->
+
+  <!-- limits -->
+  <max_linear_acceleration>10</max_linear_acceleration> <!-- computed from <max_linear_acceleration> in the original plugin -->
+
+  <topic>cmd_vel</topic> <!-- from <commant_topic> -->
+
+  <odom_topic>odom</odom_topic> <!-- from <odometry_topic>-->
+  <frame_id>odom</frame_id> <!-- from  <odometry_frame>-->
+  <child_frame_id>base_link</child_frame_id> <!--from <robot_base_frame> --> <!-- base_footprint the best-->
+  <odom_publisher_frequency>100</odom_publisher_frequency> <!-- from <update_rate>-->
+
+  <tf_topic>tf</tf_topic> <!--  Short topic name for tf output -->
+
+</plugin>
+
+</gazebo>
+
+    <gazebo reference="lidar_link">
+    <sensor name="laser" type="gpu_lidar" >  <!-- why sensor name in my case should be laser else it will produce -->
+<!-- [ruby $(which ign) gazebo-1] [GUI] [Err] [VisualizeLidar.cc:277] Error entity lidar_link doesn't exist and cannot be used to set lidar visual pose  -->      
+      <!-- <pose>0 0 0.0 0 0 0</pose> -->
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>800</samples>
+            <!-- <resolution>1</resolution> -->
+            <min_angle>-1.5708</min_angle>
+            <max_angle>1.5708</max_angle>
+          </horizontal>
+          <!-- <vertical>
+            <samples>1</samples>
+            <resolution>0.01</resolution>
+            <min_angle>0</min_angle>
+            <max_angle>1</max_angle>
+          </vertical> -->
+        </scan>
+        <range>
+          <min>0.08</min>
+          <max>15.0</max>
+          <!-- <resolution>0.01</resolution> -->
+        </range>
+      </lidar>
+        <topic>scan</topic>
+        <!-- Set frame ID appropriately, typically 'lidar_link' -->
+        <gz_frame_id>lidar_link</gz_frame_id> 
+        <update_rate>30</update_rate>
+    </sensor>
+  </gazebo>
+
+<gazebo reference="camera_link">
+<sensor name="camera" type="camera">
+  <always_on>true</always_on>
+  <visualize>true</visualize>
+  <update_rate>30</update_rate>
+  <topic>camera/image_raw</topic>
+  <!-- Set frame ID appropriately, typically 'camera_link' -->
+  <gz_frame_id>camera_link</gz_frame_id>
+  <camera name="camera"> <!-- intel_realsense_r200 -->
+   
+   <!-- The topic below related to internsic parameters of camera -->
+     <camera_info_topic>camera/camera_info</camera_info_topic> <!-- camera/camera_info --> 
+  
+     <!-- all the content of <camera> from the original -->
+     <horizontal_fov>1.02974</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>  <!-- 8 bits of Red,Green,Blue -->
+          </image>
+          <clip>
+            <near>0.02</near> <!-- min range -->
+            <far>30</far> <!-- max range -->
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <!-- Noise is sampled independently per pixel on each frame.
+                  That pixel's noise value is added to each of its color
+                  channels, which at that point lie in the range [0,1]. -->
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+  </camera>
+</sensor>
+</gazebo>
+
+
+<!-- Mesh faker gebt da menen -->
+  <!-- <gazebo>
     <plugin
         filename="gz-sim-diff-drive-system"
         name="gz::sim::systems::DiffDrive">
@@ -218,25 +357,26 @@
         <odom_publish_frequency>1</odom_publish_frequency>
         <topic>cmd_vel</topic>
     </plugin>
+ </gazebo> -->
 
-
-    <sensor name="gpu_lidar" type="gpu_lidar">
-      <pose relative_to="lidar_link">0 0 0 0 0 0</pose>
-      <topic>scan</topic>
+    <!-- Lidar old -->
+    <!-- <gazebo reference="lidar_link">
+    <sensor type="gpu_ray" name="lidar_sensor">
+      <pose>0 0 0.1 0 0 0</pose>
       <update_rate>10</update_rate>
       <ray>
         <scan>
           <horizontal>
             <samples>640</samples>
             <resolution>1</resolution>
-            <min_angle>-1.396263</min_angle>
-            <max_angle>1.396263</max_angle>
+            <min_angle>-1.5708</min_angle>
+            <max_angle>1.5708</max_angle>
           </horizontal>
           <vertical>
             <samples>1</samples>
             <resolution>0.01</resolution>
             <min_angle>0</min_angle>
-            <max_angle>10</max_angle>
+            <max_angle>0</max_angle>
           </vertical>
         </scan>
         <range>
@@ -245,9 +385,12 @@
           <resolution>0.01</resolution>
         </range>
       </ray>
-      <always_on>1</always_on>
-      <visualize>true</visualize>
+      <plugin name="gazebo_ros_laser" filename="libgazebo_ros_laser.so">
+        <topicName>/scan</topicName>
+        <frameName>lidar_link</frameName>
+      </plugin>
     </sensor>
-  </gazebo>
+  </gazebo> -->
+ 
 
 </robot>
